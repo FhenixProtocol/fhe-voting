@@ -5,6 +5,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();
   const { deploy } = hre.deployments;
 
+  const voting = await deploy("FHVoting", {
+    from: deployer,
+    args: ["?", "yes", "no"],
+    log: true,
+    skipIfAlreadyDeployed: false,
+  });
+
+  console.log(`FHVoting contract: `, voting.address);
+
   const counter = await deploy("Counter", {
     from: deployer,
     args: [],
@@ -16,5 +25,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.id = "deploy_counter";
-func.tags = ["Counter"];
+func.id = "deploy_voting";
+func.tags = ["FHVoting"];

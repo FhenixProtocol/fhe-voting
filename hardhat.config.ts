@@ -8,7 +8,10 @@ import { resolve } from "path";
 import "./tasks/accounts";
 import "./tasks/add";
 import "./tasks/getCount";
+import "./tasks/getTallies";
+import "./tasks/init";
 import "./tasks/taskDeploy";
+import "./tasks/vote";
 
 const dotenvConfigPath: string = process.env.DOTENV_CONFIG_PATH || "./.env";
 dotenvConfig({ path: resolve(__dirname, dotenvConfigPath) });
