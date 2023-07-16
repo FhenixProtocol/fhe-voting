@@ -6,31 +6,40 @@ import "fhevm/lib/TFHE.sol";
 
 contract FHVoting {
     string public query;
-    string public option1;
-    string public option2;
 
-    euint32 option1Tally;
-    euint32 option2Tally;
+    string[] public options;
+    euint8[] internal encOptions;
 
     uint32 MAX_INT = 2 ** 32 - 1;
+    uint8 MAX_OPTIONS = 5;
 
-    mapping(address => euint32) internal votes;
+    mapping(address => euint8) internal votes;
+    mapping(uint8 => euint32) internal tally;
 
-    constructor(string memory q, string memory opt1, string memory opt2) {
+    constructor(string memory q, string[] memory optList) {
+        require(optList.length <= MAX_OPTIONS, "too many options!");
+
         query = q;
-        option1 = opt1;
-        option2 = opt2;
+        options = optList;
     }
 
     function init() public {
-        option1Tally = TFHE.asEuint32(0);
-        option2Tally = TFHE.asEuint32(0);
+        for (uint8 i = 0; i < options.length; i++) {
+            tally[i] = TFHE.asEuint32(0);
+            encOptions.push(TFHE.asEuint8(i));
+        }
     }
 
     function vote(bytes memory encOption) public {
-        euint32 option = TFHE.asEuint32(encOption);
+        euint8 option = TFHE.asEuint8(encOption);
 
-        TFHE.req(TFHE.or(TFHE.eq(option, TFHE.asEuint32(1)), TFHE.eq(option, TFHE.asEuint32(2))));
+        // This is probably not needed
+        // require(encOptions.contains(option))
+        euint8 isValid = TFHE.or(TFHE.eq(option, encOptions[0]), TFHE.eq(option, encOptions[1]));
+        for (uint i = 1; i < encOptions.length; i++) {
+            TFHE.or(isValid, TFHE.eq(option, encOptions[i + 1]));
+        }
+        TFHE.req(isValid);
 
         // If already voted - first revert the old vote
         if (TFHE.isInitialized(votes[msg.sender])) {
@@ -41,22 +50,19 @@ contract FHVoting {
         addToTally(option, TFHE.asEuint32(1));
     }
 
-    function getOpt1Tally(bytes32 publicKey) public view returns (bytes memory) {
-        return TFHE.reencrypt(option1Tally, publicKey);
+    function getTally(bytes32 publicKey) public view returns (bytes[] memory) {
+        bytes[] memory tallyResp = new bytes[](encOptions.length);
+        for (uint8 i = 0; i < encOptions.length; i++) {
+            tallyResp[i] = (TFHE.reencrypt(tally[i], publicKey));
+        }
+
+        return tallyResp;
     }
 
-    function getOpt2Tally(bytes32 publicKey) public view returns (bytes memory) {
-        return TFHE.reencrypt(option2Tally, publicKey);
-    }
-
-    function addToTally(euint32 option, euint32 eAmount) internal {
-        // if (option == 1) return eAmount else return 0
-        euint32 opt1Add = TFHE.cmux(TFHE.eq(option, TFHE.asEuint32(1)), eAmount, TFHE.asEuint32(0));
-
-        // if (option == 2) return eAmount else return 0
-        euint32 opt2Add = TFHE.cmux(TFHE.eq(option, TFHE.asEuint32(2)), eAmount, TFHE.asEuint32(0));
-
-        option1Tally = TFHE.add(option1Tally, opt1Add);
-        option2Tally = TFHE.add(option2Tally, opt2Add);
+    function addToTally(euint8 option, euint32 amount) internal {
+        for (uint8 i = 0; i < encOptions.length; i++) {
+            euint32 toAdd = TFHE.cmux(TFHE.asEuint32(TFHE.eq(option, encOptions[i])), amount, TFHE.asEuint32(0));
+            tally[i] = TFHE.add(tally[i], toAdd);
+        }
     }
 }
