@@ -15,11 +15,9 @@ task("task:getTallies")
     const voting = await ethers.getContractAt("FHVoting", FHVoting.address);
 
     const { instance, publicKey } = await createFheInstance(hre, FHVoting.address);
-    const eOpt1Tally = await voting.connect(signers[taskArguments.account]).getOpt1Tally(publicKey);
-    let tally = instance.decrypt(FHVoting.address, eOpt1Tally);
-    console.log("Option 1 tally: ", tally);
+    const tally = await voting.connect(signers[taskArguments.account]).getTally(publicKey); //.getOpt1Tally(publicKey);
 
-    const eOpt2Tally = await voting.connect(signers[taskArguments.account]).getOpt2Tally(publicKey);
-    tally = instance.decrypt(FHVoting.address, eOpt2Tally);
-    console.log("Option 2 tally: ", tally);
+    for (var i = 0; i < tally.length; i++) {
+      console.log(`Option ${i} tally: `, instance.decrypt(FHVoting.address, tally[i]));
+    }
   });

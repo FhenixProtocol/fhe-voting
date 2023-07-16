@@ -7,7 +7,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const voting = await deploy("FHVoting", {
     from: deployer,
-    args: ["?", "yes", "no"],
+    args: ["question?", ["yes", "no"]],
     log: true,
     skipIfAlreadyDeployed: false,
   });

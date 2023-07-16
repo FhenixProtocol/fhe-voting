@@ -19,7 +19,7 @@ task("task:vote")
     console.log(`contract at: ${Voting.address}, for signer: ${signers[taskArguments.account].address}`);
 
     const { instance } = await createFheInstance(hre, Voting.address);
-    const eVote = instance.encrypt32(Number(taskArguments.option));
+    const eVote = instance.encrypt8(Number(taskArguments.option));
 
     await voting.connect(signers[Number(taskArguments.account)]).vote(eVote);
 
